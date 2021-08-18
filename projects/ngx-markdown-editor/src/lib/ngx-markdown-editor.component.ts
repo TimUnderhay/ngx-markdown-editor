@@ -2,13 +2,11 @@ import { Component, ViewChild, forwardRef, Renderer2, Attribute, Input, Output, 
 import { NG_VALUE_ACCESSOR, ControlValueAccessor, NG_VALIDATORS, Validator, AbstractControl, ValidationErrors } from '@angular/forms';
 import { isPlatformBrowser } from '@angular/common';
 import { DomSanitizer } from '@angular/platform-browser';
-import { MdEditorOption, MarkedjsOption } from './md-editor.types';
+import { MdEditorOption } from './types/editor';
 import * as marked from 'marked';
-import 'ace';
-import hljs from 'highlightjs';
+import hljs from 'highlight.js';
 
 declare let ace: AceAjax.Ace;
-// declare let hljs: any;
 
 const DEFAULT_EDITOR_OPTION: MdEditorOption = {
   showPreviewPanel: true,
@@ -21,24 +19,24 @@ const DEFAULT_EDITOR_OPTION: MdEditorOption = {
 }
 
 @Component({
-  selector: 'md-editor',
-  styleUrls: ['./md-editor.scss'],
-  templateUrl: './md-editor.html',
+  selector: 'ngx-markdown-editor',
+  styleUrls: ['./ngx-markdown-editor.component.scss'],
+  templateUrl: './ngx-markdown-editor.component.html',
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => MarkdownEditorComponent),
+      useExisting: NgxMarkdownEditorComponent,
       multi: true
     },
     {
       provide: NG_VALIDATORS,
-      useExisting: forwardRef(() => MarkdownEditorComponent),
+      useExisting: NgxMarkdownEditorComponent,
       multi: true
     }
   ]
 })
 
-export class MarkdownEditorComponent implements ControlValueAccessor, Validator {
+export class NgxMarkdownEditorComponent implements Validator, ControlValueAccessor {
 
   @ViewChild('aceEditor', { static: true }) aceEditorContainer: ElementRef;
   @ViewChild('previewContainer', { static: true }) previewContainer: ElementRef;
@@ -143,11 +141,13 @@ export class MarkdownEditorComponent implements ControlValueAccessor, Validator 
     };
     this._markedJsOpt = Object.assign({}, markedjsOpt, this.options.markedjsOpt);
     if (this._markedJsOpt.sanitize === true && typeof this._markedJsOpt.sanitizer !== 'function') {
-      this._markedJsOpt.sanitizer = (markdownString) => {
-        return this._domSanitizer.sanitize(SecurityContext.HTML, markdownString);
+      this._markedJsOpt.sanitizer = (markdownString: string) => {
+        return this._domSanitizer.sanitize(SecurityContext.HTML, markdownString) as string;
       }
     }
   }
+
+
 
   ngAfterViewInit() {
     if (!this._isInBrowser) return;
@@ -171,21 +171,31 @@ export class MarkdownEditorComponent implements ControlValueAccessor, Validator 
     this._aceEditorIns = editor;
   }
 
+
+
   ngOnDestroy() {
     this._aceEditorIns && this._aceEditorIns.destroy();
   }
+
+
 
   writeValue(value: string): void {
     this._updateMarkdownValue(value, false);
   }
 
+
+
   registerOnChange(fn: (_: any) => {}): void {
     this._onChange = fn;
   }
 
+
+
   registerOnTouched(fn: () => {}): void {
     this._onTouched = fn;
   }
+
+
 
   validate(c: AbstractControl): ValidationErrors {
     let result: any = null;
@@ -197,6 +207,8 @@ export class MarkdownEditorComponent implements ControlValueAccessor, Validator 
     }
     return result;
   }
+
+
 
   insertContent(type: string, customContent?: string) {
     if (!this._aceEditorIns) return;
@@ -256,10 +268,14 @@ export class MarkdownEditorComponent implements ControlValueAccessor, Validator 
     this._aceEditorIns.focus();
   }
 
+
+
   togglePreview() {
     this.showPreviewPanel = !this.showPreviewPanel;
     this.editorResize();
   }
+
+
 
   previewPanelClick(event: Event) {
     if (this.options.enablePreviewContentClick !== true) {
@@ -268,15 +284,21 @@ export class MarkdownEditorComponent implements ControlValueAccessor, Validator 
     }
   }
 
+
+
   fullScreen() {
     this.isFullScreen = !this.isFullScreen;
     this._renderer2.setStyle(document.body, 'overflowY', this.isFullScreen ? 'hidden' : 'auto');
     this.editorResize();
   }
 
+
+
   mdEditorResize(size: any) {
     this.editorResize();
   }
+
+
 
   editorResize(timeOut: number = 100) {
     if (!this._aceEditorIns) return
@@ -287,6 +309,8 @@ export class MarkdownEditorComponent implements ControlValueAccessor, Validator 
     }, timeOut);
   }
 
+
+
   onDragover(evt: DragEvent) {
     evt.stopImmediatePropagation();
     evt.preventDefault();
@@ -294,12 +318,18 @@ export class MarkdownEditorComponent implements ControlValueAccessor, Validator 
     this.dragover = true;
   }
 
+
+
   onDrop(evt: DragEvent) {
     evt.stopImmediatePropagation();
     evt.preventDefault();
 
-    this._uploadFiles(evt.dataTransfer.files);
+    if (evt.dataTransfer) {
+      this._uploadFiles(evt.dataTransfer.files);
+    }
   }
+
+
 
   onDragleave(evt: DragEvent) {
     evt.stopImmediatePropagation();
@@ -308,11 +338,15 @@ export class MarkdownEditorComponent implements ControlValueAccessor, Validator 
     this.dragover = false;
   }
 
+
+
   onAceEditorPaste(event: ClipboardEvent): void {
-    if (event instanceof ClipboardEvent && event.clipboardData.files.length > 0) {
+    if (event instanceof ClipboardEvent && event.clipboardData && event.clipboardData.files.length > 0) {
       this._uploadFiles(event.clipboardData.files);
     }
   }
+
+
 
   private _updateMarkdownValue(value: any, changedByUser: boolean = false) {
     const normalizedValue = typeof value === 'string' ? value : (value || '').toString();
@@ -326,6 +360,8 @@ export class MarkdownEditorComponent implements ControlValueAccessor, Validator 
     }
   }
 
+
+  
   private _updateDom() {
     if (this._convertMarkdownToHtmlTimer) clearTimeout(this._convertMarkdownToHtmlTimer);
     this._convertMarkdownToHtmlTimer = setTimeout(() => {
@@ -352,6 +388,8 @@ export class MarkdownEditorComponent implements ControlValueAccessor, Validator 
     }, 100);
   }
 
+
+
   private _getRender(renderType: 'image' | 'table' | 'code' | 'listitem') {
     let customRender = this.options && this.options.customRender && this.options.customRender[renderType];
     if (customRender && typeof customRender === 'function') {
@@ -360,12 +398,12 @@ export class MarkdownEditorComponent implements ControlValueAccessor, Validator 
     else {
       switch (renderType) {
         case 'image':
-          return function (href: string, title: string, text: string) {
+          return function (this: any, href: string, title: string, text: string) {
             let out = `<img style="max-width: 100%;" src="${href}" alt="${text}"`;
             if (title) {
               out += ` title="${title}"`;
             }
-            out += (<any>this.options).xhtml ? "/>" : ">";
+            out += this.options.xhtml ? "/>" : ">";
             return out;
           };
         case 'code':
@@ -405,6 +443,8 @@ export class MarkdownEditorComponent implements ControlValueAccessor, Validator 
       }
     }
   }
+
+
 
   private _uploadFiles(files: FileList): void {
     if (!this._hasUploadFunction || this.isUploading) return;

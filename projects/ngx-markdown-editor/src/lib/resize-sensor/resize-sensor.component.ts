@@ -1,12 +1,12 @@
 import { Component, NgZone, Input, Output, ViewChild, ElementRef, EventEmitter } from '@angular/core';
 
 @Component({
-  selector: 'md-editor-resize-sensor',
+  selector: 'ngx-markdown-editor-resize-sensor',
   templateUrl: './resize-sensor.html',
   styleUrls: ['./resize-sensor.scss']
 })
 
-export class MarkdownEditorResizeSensorComponent {
+export class NgxMarkdownEditorResizeSensorComponent {
 
   @ViewChild('resizeSensor', { static: true }) resizeSensor: ElementRef;
 
@@ -32,6 +32,8 @@ export class MarkdownEditorResizeSensorComponent {
     });
   }
 
+
+
   private detectSize() {
     let width = this.resizeSensor.nativeElement.offsetWidth;
     let height = this.resizeSensor.nativeElement.offsetHeight;
@@ -46,4 +48,5 @@ export class MarkdownEditorResizeSensorComponent {
       this.detectSize();
     }, this.interval);
   }
+
 }
